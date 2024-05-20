@@ -1,6 +1,8 @@
 import express from 'express';
 import { Product } from '../schemas/product.schema.js';
-
+import { createProductValidator } from '../middlewares/validators/create-product.middleware.js';
+import { deleteProductValidator } from '../middlewares/validators/delete-product.middleware.password.js';
+import { updateProductValidator } from '../middlewares/validators/updatacreate-product.middleware.js';
 const productsRouter = express.Router();
 
 // 생성
@@ -68,84 +70,92 @@ productsRouter.get('/api/:id', async (req, res, next) => {
 });
 
 // 수정
-productsRouter.put('/api/:id', async (req, res, next) => {
-  // 상품 id 파싱하기
-  try {
-    const { id } = req.params;
-    // 상품 수정 정보 파싱하기
-    const { name, description, status, manager, password } = req.body;
-    // db에서 조회하기
-    const data = await Product.findById(id, { password: true });
+productsRouter.put(
+  '/api/:id',
+  updateProductValidator,
+  async (req, res, next) => {
+    // 상품 id 파싱하기
+    try {
+      const { id } = req.params;
+      // 상품 수정 정보 파싱하기
+      const { name, description, status, manager, password } = req.body;
+      // db에서 조회하기
+      const data = await Product.findById(id, { password: true });
 
-    if (!data) {
+      if (!data) {
+        return res
+          .status(404)
+          .json({ status: 404, message: '상품이 존재하지 않습니다.' });
+      }
+
+      // 비밀번호 일치여부 확인하기
+      const isPassword = password == data.password;
+
+      if (!isPassword) {
+        return res
+          .status(401)
+          .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
+      }
+
+      const updatedata = {
+        name,
+        description,
+        status,
+        manager,
+      };
+
+      const datasave = await Product.findByIdAndUpdate(id, updatedata, {
+        new: true,
+      });
+
+      // 완료메세지 반환하기
       return res
-        .status(404)
-        .json({ status: 404, message: '상품이 존재하지 않습니다.' });
+        .status(200)
+        .json({ status: 200, message: '상품 수정에 성공했습니다.', datasave });
+    } catch (error) {
+      next(error);
     }
-
-    // 비밀번호 일치여부 확인하기
-    const isPassword = password == data.password;
-
-    if (!isPassword) {
-      return res
-        .status(401)
-        .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
-    }
-
-    const updatedata = {
-      name,
-      description,
-      status,
-      manager,
-    };
-
-    const datasave = await Product.findByIdAndUpdate(id, updatedata, {
-      new: true,
-    });
-
-    // 완료메세지 반환하기
-    return res
-      .status(200)
-      .json({ status: 200, message: '상품 수정에 성공했습니다.', datasave });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 // 삭제
-productsRouter.delete('/api/:id', async (req, res, next) => {
-  // 상품 id 파싱하기
-  try {
-    const { id } = req.params;
+productsRouter.delete(
+  '/api/:id',
+  deleteProductValidator,
+  async (req, res, next) => {
+    // 상품 id 파싱하기
+    try {
+      const { id } = req.params;
 
-    // 패스워드 파싱하기
-    const { password } = req.body;
-    // db에서 조회하기
-    const data = await Product.findById(id, { password: true });
+      // 패스워드 파싱하기
+      const { password } = req.body;
+      // db에서 조회하기
+      const data = await Product.findById(id, { password: true });
 
-    if (!data) {
+      if (!data) {
+        return res
+          .status(404)
+          .json({ status: 404, message: '상품이 존재하지 않습니다.' });
+      }
+
+      // 비밀번호 일치여부 확인하기
+      const isPassword = password == data.password;
+      if (!isPassword) {
+        return res
+          .status(401)
+          .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
+      }
+
+      // db에서 삭제하기
+      const datasave = await Product.findByIdAndDelete(id);
+      // 삭제 후 완료메세지 반환하기
       return res
-        .status(404)
-        .json({ status: 404, message: '상품이 존재하지 않습니다.' });
+        .status(200)
+        .json({ status: 200, message: '상품 삭제에 성공했습니다.', datasave });
+    } catch (error) {
+      next(error);
     }
-
-    // 비밀번호 일치여부 확인하기
-    const isPassword = password == data.password;
-    if (!isPassword) {
-      return res
-        .status(401)
-        .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
-    }
-
-    // db에서 삭제하기
-    const datasave = await Product.findByIdAndDelete(id);
-    // 삭제 후 완료메세지 반환하기
-    return res
-      .status(200)
-      .json({ status: 200, message: '상품 삭제에 성공했습니다.', datasave });
-  } catch (error) {
-    next(error);
-  }
-});
+  },
+);
 
 export { productsRouter };
