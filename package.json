@@ -17,5 +17,6 @@
   "devDependencies": {
     "nodemon": "^3.1.0",
     "prettier": "^3.2.5"
-  }
+  },
+  "author": "leeminjun <mlnsuk0702@gmail.com>"
 }
