@@ -20,35 +20,88 @@ productsRouter.post('/api', async (req, res) => {
 });
 
 // 목록 조회
-productsRouter.get('/api', (req, res) => {
+productsRouter.get('/api', async (req, res) => {
   //db에서 조회하기
+  const data = await Product.find().sort({ createdAt: 'desc' }).exec();
   //완료메세지 반환하기
+  return res
+    .status(200)
+    .json({ status: 200, message: '상품 목록 조회를 완료하였습니다.', data });
 });
 
 // 상세 조회
-productsRouter.get('/api/:id', (req, res) => {
+productsRouter.get('/api/:id', async (req, res) => {
   // 상품 id 파싱하기
+  const { id } = req.params;
+
   // db에서 조회하기
+  const data = await Product.findById(id).exec();
+
   //완료메세지 반환하기
+  return res
+    .status(200)
+    .json({ status: 200, message: '상품 상세 조회를 성공하였습니다.', data });
 });
 
 // 수정
-productsRouter.put('/api/:id', (req, res) => {
+productsRouter.put('/api/:id', async (req, res) => {
   // 상품 id 파싱하기
+  const { id } = req.params;
   // 상품 수정 정보 파싱하기
+  const { name, description, status, manager, password } = req.body;
   // db에서 조회하기
+  const data = await Product.findById(id, { password: true });
+
   // 비밀번호 일치여부 확인하기
-  // db에 갱신하기
+  const isPassword = password == data.password;
+
+  if (!isPassword) {
+    return res
+      .status(401)
+      .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
+  }
+
+  const updatedata = {
+    name,
+    description,
+    status,
+    manager,
+  };
+
+  const datasave = await Product.findByIdAndUpdate(id, updatedata, {
+    new: true,
+  });
+
   // 완료메세지 반환하기
+  return res
+    .status(200)
+    .json({ status: 200, message: '상품 수정에 성공했습니다.', datasave });
 });
 
 // 삭제
-productsRouter.delete('/api/:id', (req, res) => {
+productsRouter.delete('/api/:id', async (req, res) => {
   // 상품 id 파싱하기
+  const { id } = req.params;
+
+  // 패스워드 파싱하기
+  const { password } = req.body;
   // db에서 조회하기
+  const data = await Product.findById(id, { password: true });
+
   // 비밀번호 일치여부 확인하기
+  const isPassword = password == data.password;
+  if (!isPassword) {
+    return res
+      .status(401)
+      .json({ status: 401, message: '비밀번호가 일치하지 않습니다.' });
+  }
+
   // db에서 삭제하기
+  const datasave = await Product.findByIdAndDelete(id);
   // 삭제 후 완료메세지 반환하기
+  return res
+    .status(200)
+    .json({ status: 200, message: '상품 삭제에 성공했습니다.', datasave });
 });
 
 export { productsRouter };
